@@ -14,7 +14,7 @@ This project implements a Convolutional Neural Network (CNN) in Python using Ten
 1. Clone or download this repository to your local machine.
 
     ```bash
-    git clone https://github.com/your-username/AI-Project.git
+    git clone https://github.com/hasanFashtook/ai-cnn.git
     ```
 
 2. Install the required Python libraries using pip.
