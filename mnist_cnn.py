@@ -1,40 +1,61 @@
+import os
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
+from tensorflow.keras.callbacks import ModelCheckpoint
 import matplotlib.pyplot as plt
 
 # Load the dataset from the local file
-path = "C:/Users/hasoon/Desktop/FEEE/AI-Project/mnist.npz"
+base_path = os.path.dirname(os.path.abspath(__file__))
+dataset_path = os.path.join(base_path, "mnist.npz")
 
-with np.load(path, allow_pickle=True) as f:
+with np.load(dataset_path, allow_pickle=True) as f:
     train_images, train_labels = f["x_train"], f["y_train"]
     test_images, test_labels = f["x_test"], f["y_test"]
 
 train_images, test_images = train_images / 255.0, test_images / 255.0
 
-# Build the model
-model = models.Sequential(
-    [
-        layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(64, (3, 3), activation="relu"),
-        layers.MaxPooling2D((2, 2)),
-        layers.Conv2D(64, (3, 3), activation="relu"),
-        layers.Flatten(),
-        layers.Dense(64, activation="relu"),
-        layers.Dense(10, activation="softmax"),
-    ]
-)
-
+# Define the model architecture
+def create_model():
+    model = models.Sequential(
+        [
+            layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
+            layers.MaxPooling2D((2, 2)),
+            layers.Conv2D(64, (3, 3), activation="relu"),
+            layers.MaxPooling2D((2, 2)),
+            layers.Conv2D(64, (3, 3), activation="relu"),
+            layers.Flatten(),
+            layers.Dense(64, activation="relu"),
+            layers.Dense(10, activation="softmax"),
+        ]
+    )
 # Compile the model
-model.compile(
-    optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
-)
+    model.compile(
+        optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
+    )
+    return model
 
-# Train the model
-model.fit(
-    train_images, train_labels, epochs=5, validation_data=(test_images, test_labels)
-)
+
+# Path to save/load the model
+model_path = os.path.join(base_path, 'mnist_cnn_model.keras')
+checkpoint_path = os.path.join(base_path, 'best_model.keras')
+checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=True, mode='min')
+
+
+# Check if the model already exists
+if os.path.exists(model_path):
+    # Load the trained model
+    model = tf.keras.models.load_model(model_path)
+    print("Loaded trained model.")
+else:
+    # Create a new model and train it
+    model = create_model()
+    model.fit(
+        train_images, train_labels, epochs=5, validation_data=(test_images, test_labels)
+    )
+    # Save the trained model
+    model.save(model_path)
+    print("Model trained and saved.")
 
 # Evaluate the model
 test_loss, test_acc = model.evaluate(test_images, test_labels)
