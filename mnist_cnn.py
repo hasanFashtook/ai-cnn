@@ -17,30 +17,26 @@ train_images, test_images = train_images / 255.0, test_images / 255.0
 
 # Define the model architecture
 def create_model():
-    model = models.Sequential(
-        [
-            layers.Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(64, (3, 3), activation="relu"),
-            layers.MaxPooling2D((2, 2)),
-            layers.Conv2D(64, (3, 3), activation="relu"),
-            layers.Flatten(),
-            layers.Dense(64, activation="relu"),
-            layers.Dense(10, activation="softmax"),
-        ]
-    )
-# Compile the model
+    inputs = tf.keras.Input(shape=(28, 28, 1))
+    x = layers.Conv2D(32, (3, 3), activation="relu")(inputs)
+    x = layers.MaxPooling2D((2, 2))(x)
+    x = layers.Conv2D(64, (3, 3), activation="relu")(x)
+    x = layers.MaxPooling2D((2, 2))(x)
+    x = layers.Conv2D(64, (3, 3), activation="relu")(x)
+    x = layers.Flatten()(x)
+    x = layers.Dense(64, activation="relu")(x)
+    outputs = layers.Dense(10, activation="softmax")(x)
+
+    model = models.Model(inputs=inputs, outputs=outputs)
     model.compile(
         optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"]
     )
     return model
 
-
 # Path to save/load the model
 model_path = os.path.join(base_path, 'mnist_cnn_model.keras')
 checkpoint_path = os.path.join(base_path, 'best_model.keras')
 checkpoint = ModelCheckpoint(checkpoint_path, monitor='val_loss', save_best_only=True, mode='min')
-
 
 # Check if the model already exists
 if os.path.exists(model_path):
@@ -51,11 +47,15 @@ else:
     # Create a new model and train it
     model = create_model()
     model.fit(
-        train_images, train_labels, epochs=5, validation_data=(test_images, test_labels)
+        train_images, train_labels, epochs=5, validation_data=(test_images, test_labels),
+        callbacks=[checkpoint]
     )
     # Save the trained model
     model.save(model_path)
     print("Model trained and saved.")
+
+# Load the best model saved by ModelCheckpoint
+model = tf.keras.models.load_model(checkpoint_path)
 
 # Evaluate the model
 test_loss, test_acc = model.evaluate(test_images, test_labels)
